@@ -92,7 +92,7 @@ echo " |  _  /|  __| | |    |  __|   / /\ \    \___ \|  __|  "
 echo " | | \ \| |____| |____| |____ / ____ \   ____) | |____ "
 echo " |_|  \_\______|______|______/_/    \_\ |_____/|______|"
 echo -e "\033[0m"
-echo "              --- COMPANY CIRCLES ---"
+echo "              --- CIRCLES LIFE ---"
 echo "--- Release Automation Script v$VERSION ---"
 
 # Function to get last 2 tags
