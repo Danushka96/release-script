@@ -33,7 +33,22 @@ confirm() {
 case "$1" in
     install)
         SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-        confirm "Install script to /usr/local/bin/release?" "sudo ln -sf \"$SCRIPT_PATH\" /usr/local/bin/release"
+        LOCAL_BIN="$HOME/.local/bin"
+        mkdir -p "$LOCAL_BIN"
+        
+        echo "Select installation directory:"
+        echo "1) System global (/usr/local/bin/release) - Requires sudo"
+        echo "2) User local ($LOCAL_BIN/release) - No sudo required"
+        read -p "Selection (1/2): " INSTALL_CHOICE
+        
+        if [[ "$INSTALL_CHOICE" == "1" ]]; then
+            confirm "Install script to /usr/local/bin/release?" "sudo ln -sf \"$SCRIPT_PATH\" /usr/local/bin/release"
+        else
+            confirm "Install script to $LOCAL_BIN/release?" "ln -sf \"$SCRIPT_PATH\" \"$LOCAL_BIN/release\""
+            echo -e "\n\033[1;33mIMPORTANT:\033[0m Make sure $LOCAL_BIN is in your PATH."
+            echo "Add this to your ~/.zshrc if needed:"
+            echo 'export PATH="$HOME/.local/bin:$PATH"'
+        fi
         exit 0
         ;;
     version)

@@ -15,6 +15,7 @@ To install it globally as `release`:
 ```bash
 ./release.sh install
 ```
+*Note: If you don't have admin (sudo) access, select the "User local" option during installation and ensure `~/.local/bin` is in your `PATH`.*
 
 ## Usage
 
