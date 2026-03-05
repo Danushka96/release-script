@@ -41,7 +41,18 @@ case "$1" in
         exit 0
         ;;
     update)
-        echo "Update command will be available in future versions (via GitHub)."
+        UPDATE_URL="https://raw.githubusercontent.com/Danushka96/release-script/main/release.sh"
+        SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+        echo "Checking for updates from $UPDATE_URL..."
+        if curl -s -f "$UPDATE_URL" -o "${SCRIPT_PATH}.tmp"; then
+            mv "${SCRIPT_PATH}.tmp" "$SCRIPT_PATH"
+            chmod +x "$SCRIPT_PATH"
+            echo "Successfully updated to the latest version."
+        else
+            echo "Failed to download update. Please check your connection or the URL."
+            rm -f "${SCRIPT_PATH}.tmp"
+            exit 1
+        fi
         exit 0
         ;;
     help|--help|-h)
