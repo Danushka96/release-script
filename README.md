@@ -1,9 +1,16 @@
-# Release Automation Script
+# Release Automation Script (TUI Edition)
 
-A robust Bash script to automate the release process for PreProd (Release Candidate tags) and Prod (Version tags) environments, ensuring user confirmation at every step.
+A robust Bash script to automate the release process for PreProd (Release Candidate tags) and Prod (Version tags) environments, featuring a rich TUI powered by [Gum](https://github.com/charmbracelet/gum).
 
 ## Installation
 
+### 1. Prerequisites
+This script requires **[Gum](https://github.com/charmbracelet/gum)** for the TUI. Install it via Homebrew:
+```bash
+brew install gum
+```
+
+### 2. Download and Run
 You can install the script using `curl`:
 
 ```bash
