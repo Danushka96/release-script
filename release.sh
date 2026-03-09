@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.2.0"
+VERSION="1.3.0"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -144,7 +144,17 @@ fi
 
 # 3. Pull and Log
 confirm "Pull Master into current branch" "git pull origin master"
-confirm "Show logs" "git log -n 5 --oneline"
+
+# NEW: Show changes since last tag
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+if [[ -n "$LAST_TAG" ]]; then
+    echo -e "\n\033[1;34mChanges since last tag ($LAST_TAG):\033[0m"
+    git log "$LAST_TAG"..HEAD --oneline
+else
+    echo -e "\n\033[1;34mNo previous tags found. Showing last 10 commits:\033[0m"
+    git log -n 10 --oneline
+fi
+
 confirm "Push changes" "git push"
 
 # 4. Tag Management
