@@ -1,11 +1,18 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.4.1"
+VERSION="1.4.2"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
 UPDATE_URL="https://raw.githubusercontent.com/Danushka96/release-script/main/release.sh"
+
+# Handle Interrupts
+trap_exit() {
+    echo -e "\n\033[1;31mInterrupted by user. Exiting...\033[0m"
+    exit 1
+}
+trap trap_exit SIGINT SIGTERM
 
 # Function to check and install dependencies
 check_dependencies() {
