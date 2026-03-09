@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.1.0"
+VERSION="1.2.0"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -122,6 +122,17 @@ fi
 read -p "Enter release branch name [default: $DEFAULT_BRANCH]: " TARGET_BRANCH
 TARGET_BRANCH=${TARGET_BRANCH:-$DEFAULT_BRANCH}
 
+# NEW: Derive Year and Week from the selected branch if it follows the pattern
+if [[ "$TARGET_BRANCH" =~ release/Y([0-9]{4})W([0-9]{2}) ]]; then
+    YEAR_DERIVED="${BASH_REMATCH[1]}"
+    WEEK_DERIVED="${BASH_REMATCH[2]}"
+    TAG_PREFIX="Y${YEAR_DERIVED}W${WEEK_DERIVED}"
+    echo -e "\033[1;34mINFO:\033[0m Derived tag prefix '$TAG_PREFIX' from branch '$TARGET_BRANCH'"
+else
+    # Fallback/Production mode default prefix if it doesn't match
+    TAG_PREFIX="Y${YEAR}W${WEEK}" 
+fi
+
 # Check if branch exists locally or remotely
 if git branch -a | grep -q "remotes/origin/$TARGET_BRANCH"; then
     echo "Branch 'origin/$TARGET_BRANCH' exists."
@@ -138,6 +149,7 @@ confirm "Push changes" "git push"
 
 # 4. Tag Management
 if [[ "$MODE" == "PREPROD" ]]; then
+    # Use the derived prefix
     show_last_tags "$TAG_PREFIX"
     
     # Simple increment logic

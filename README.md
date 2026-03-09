@@ -35,7 +35,8 @@ release
 ## Features
 
 - **Interactive Prompts**: Confirms every git command before execution.
-- **Auto-increment Logic**: Automatically increments PreProd RC tags (e.g., `Y2026W05-RC1` -> `Y2026W05-RC2`).
+- **Auto-increment Logic**: Automatically increments PreProd RC tags.
+- **Smart Branch Override**: Correctly detects the week from the selected release branch for pinning tags (e.g., `release/Y2026W01` -> `Y2026W01-RC2`).
 - **Branch Management**: Identifies and creates release branches based on year/week when needed.
 - **Environment Support**: Separate flows for PreProd (RC) and Prod (Version) releases.
 - **Global Availability**: Can be installed to `/usr/local/bin` for quick access.
