@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.4.0"
+VERSION="1.4.1"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -113,8 +113,8 @@ echo " | |      | | |  _  /| |    | |    |  __|  \___ \  | |      | | |  __| |  
 echo " | |____ _| |_| | \ \| |____| |____| |____ ____) | | |____ _| |_| |    | |____ "
 echo "  \____|_____|_|  \_ \\______|______|______|_____/  |______|_____|_|    |______|"
 echo -e "${RESET}"
-echo -e "          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
-echo "--- Release Automation Script v$VERSION ---"
+echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
+echo "                     --- Release Automation Script v$VERSION ---"
 
 # 1. Environment Selection
 MODE=$(gum choose "Pre-Prod (RC Release)" "Prod (Version Release)")
