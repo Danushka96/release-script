@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.3.0"
+VERSION="1.3.1"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -145,13 +145,20 @@ fi
 # 3. Pull and Log
 confirm "Pull Master into current branch" "git pull origin master"
 
-# NEW: Show changes since last tag
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+# NEW: Show changes since last tag (Environment Aware)
+if [[ "$MODE" == "PREPROD" ]]; then
+    # Look for the last RC tag for this specific week
+    LAST_TAG=$(git tag -l "${TAG_PREFIX}-RC*" --sort=-v:refname | head -n 1)
+else
+    # Look for the last Production (Version) tag, ignoring RC tags
+    LAST_TAG=$(git tag -l "[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+fi
+
 if [[ -n "$LAST_TAG" ]]; then
-    echo -e "\n\033[1;34mChanges since last tag ($LAST_TAG):\033[0m"
+    echo -e "\n\033[1;34mChanges since last relevant tag ($LAST_TAG):\033[0m"
     git log "$LAST_TAG"..HEAD --oneline
 else
-    echo -e "\n\033[1;34mNo previous tags found. Showing last 10 commits:\033[0m"
+    echo -e "\n\033[1;34mNo previous relevant tags found. Showing last 10 commits:\033[0m"
     git log -n 10 --oneline
 fi
 
