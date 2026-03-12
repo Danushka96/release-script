@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.4.2"
+VERSION="1.5.0"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
 UPDATE_URL="https://raw.githubusercontent.com/Danushka96/release-script/main/release.sh"
+LOG_FILE="./release.log"
 
 # Handle Interrupts
 trap_exit() {
@@ -13,6 +14,17 @@ trap_exit() {
     exit 1
 }
 trap trap_exit SIGINT SIGTERM
+
+# Logging Function
+log() {
+    local message="$1"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Initialize Log File
+echo "--- Release Started ---" > "$LOG_FILE"
+log "Script Source: $0"
+log "Working Directory: $(pwd)"
 
 # Function to check and install dependencies
 check_dependencies() {
@@ -124,16 +136,18 @@ echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RES
 echo "                     --- Release Automation Script v$VERSION ---"
 
 # 1. Environment Selection
-MODE=$(gum choose "Pre-Prod (RC Release)" "Prod (Version Release)")
+MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)")
 
 if [[ "$MODE" == "Pre-Prod"* ]]; then
     ENV_MODE="PREPROD"
 else
     ENV_MODE="PROD"
 fi
+log "Environment: $ENV_MODE"
 
 # 2. Branch Management
 TARGET_BRANCH=$(gum input --placeholder "Enter release branch name" --value "$DEFAULT_BRANCH")
+log "Target Branch: $TARGET_BRANCH"
 
 # Derive Year and Week from the selected branch
 if [[ "$TARGET_BRANCH" =~ release/Y([0-9]{4})W([0-9]{2}) ]]; then
@@ -148,17 +162,23 @@ fi
 # Check if branch exists
 if git branch -a | grep -q "remotes/origin/$TARGET_BRANCH"; then
     echo -e "\nBranch 'origin/$TARGET_BRANCH' exists."
-    gum confirm "Checkout and pull master into $TARGET_BRANCH?" && \
-    gum spin --title "Updating branch..." -- bash -c "git checkout $TARGET_BRANCH && git pull origin master"
+    if gum confirm --default=yes "Checkout and pull master into $TARGET_BRANCH?"; then
+        log "Action: Update existing branch $TARGET_BRANCH"
+        gum spin --title "Updating branch..." -- bash -c "git checkout $TARGET_BRANCH && git pull origin master >> $LOG_FILE 2>&1"
+    fi
 else
     echo -e "\nBranch '$TARGET_BRANCH' does not exist."
-    gum confirm "Create branch $TARGET_BRANCH from master?" && \
-    gum spin --title "Creating branch..." -- bash -c "git checkout master && git pull origin master && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH"
+    if gum confirm --default=yes "Create branch $TARGET_BRANCH from master?"; then
+        log "Action: Create new branch $TARGET_BRANCH"
+        gum spin --title "Creating branch..." -- bash -c "git checkout master && git pull origin master && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH >> $LOG_FILE 2>&1"
+    fi
 fi
 
 # 3. Pull and Log
-gum confirm "Pull Master into current branch?" && \
-gum spin --title "Pulling from master..." -- git pull origin master
+if gum confirm --default=yes "Pull Master into current branch?"; then
+    log "Action: Pull master"
+    gum spin --title "Pulling from master..." -- bash -c "git pull origin master >> $LOG_FILE 2>&1"
+fi
 
 # Show changes since last tag
 if [[ "$ENV_MODE" == "PREPROD" ]]; then
@@ -175,8 +195,10 @@ else
     git log -n 10 --oneline
 fi
 
-gum confirm "Push changes to $TARGET_BRANCH?" && \
-gum spin --title "Pushing changes..." -- git push
+if gum confirm --default=yes "Push changes to $TARGET_BRANCH?"; then
+    log "Action: Push changes"
+    gum spin --title "Pushing changes..." -- bash -c "git push >> $LOG_FILE 2>&1"
+fi
 
 # 4. Tag Management
 if [[ "$ENV_MODE" == "PREPROD" ]]; then
@@ -191,16 +213,21 @@ if [[ "$ENV_MODE" == "PREPROD" ]]; then
         NEXT_TAG="${TAG_PREFIX}-RC${NEXT_RC}"
     fi
     
-    gum confirm "Create and push tag $NEXT_TAG?" && \
-    gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin tag $NEXT_TAG"
+    if gum confirm --default=yes "Create and push tag $NEXT_TAG?"; then
+        log "Action: Create tag $NEXT_TAG"
+        gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin tag $NEXT_TAG >> $LOG_FILE 2>&1"
+    fi
 
 else
     show_last_tags ""
     PROD_TAG=$(gum input --placeholder "Enter new version tag (e.g., 1.5.2)")
     if [[ -z "$PROD_TAG" ]]; then echo "Aborted."; exit 1; fi
     
-    gum confirm "Create and push tag $PROD_TAG?" && \
-    gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin tag $PROD_TAG"
+    if gum confirm --default=yes "Create and push tag $PROD_TAG?"; then
+        log "Action: Create version tag $PROD_TAG"
+        gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin tag $PROD_TAG >> $LOG_FILE 2>&1"
+    fi
 fi
 
 echo -e "\n\033[1;32mRelease Complete!\033[0m"
+log "--- Release Complete ---"
