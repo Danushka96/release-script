@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.5"
+VERSION="1.5.6"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -11,6 +11,10 @@ LOG_FILE="./release.log"
 # Handle Interrupts
 trap_exit() {
     echo -e "\n\033[1;31mInterrupted by user. Exiting...\033[0m"
+    log "Script interrupted by user."
+    # Kill the current process group to ensure subshells/tools also exit
+    trap - SIGINT SIGTERM # Prevent recursion
+    kill -SIGINT -$$ 2>/dev/null
     exit 1
 }
 trap trap_exit SIGINT SIGTERM
@@ -92,7 +96,7 @@ case "$1" in
         mkdir -p "$LOCAL_BIN"
         
         echo "Select installation directory:"
-        INSTALL_CHOICE=$(gum choose "System global (/usr/local/bin/release) - Requires sudo" "User local ($LOCAL_BIN/release) - No sudo required")
+        INSTALL_CHOICE=$(gum choose "System global (/usr/local/bin/release) - Requires sudo" "User local ($LOCAL_BIN/release) - No sudo required") || exit 1
         
         if [[ "$INSTALL_CHOICE" == "System"* ]]; then
             sudo ln -sf "$SCRIPT_PATH" /usr/local/bin/release
@@ -175,7 +179,7 @@ echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RES
 echo "                     --- Release Automation Script v$VERSION ---"
 
 # 1. Environment Selection
-MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)")
+MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)") || exit 1
 
 if [[ "$MODE" == "Pre-Prod"* ]]; then
     ENV_MODE="PREPROD"
@@ -185,7 +189,7 @@ fi
 log "Environment: $ENV_MODE"
 
 # 2. Branch Management
-TARGET_BRANCH=$(gum input --placeholder "Enter release branch name" --value "$DEFAULT_BRANCH")
+TARGET_BRANCH=$(gum input --placeholder "Enter release branch name" --value "$DEFAULT_BRANCH") || exit 1
 log "Target Branch: $TARGET_BRANCH"
 
 # Derive Year and Week from the selected branch
@@ -259,7 +263,7 @@ if [[ "$ENV_MODE" == "PREPROD" ]]; then
 
 else
     show_last_tags ""
-    PROD_TAG=$(gum input --placeholder "Enter new version tag (e.g., 1.5.2)")
+    PROD_TAG=$(gum input --placeholder "Enter new version tag (e.g., 1.5.2)") || exit 1
     if [[ -z "$PROD_TAG" ]]; then log "Tagging aborted"; exit 1; fi
     
     if gum confirm --default=yes "Create and push tag $PROD_TAG?"; then
