@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.1"
+VERSION="1.5.2"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -110,6 +110,9 @@ case "$1" in
     "")
         # Check dependencies only for interactive mode
         check_dependencies
+        # NEW: Fetch all remote status first
+        gum spin --title "Fetching from remote..." -- git fetch --all >> "$LOG_FILE" 2>&1
+        
         # NEW: Dirty Repo Check
         if [[ -n $(git status --porcelain) ]]; then
             echo -e "\n\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes."
@@ -173,20 +176,20 @@ if git branch -a | grep -q "remotes/origin/$TARGET_BRANCH"; then
     echo -e "\nBranch 'origin/$TARGET_BRANCH' exists."
     if gum confirm --default=yes "Checkout and pull master into $TARGET_BRANCH?"; then
         log "Action: Update existing branch $TARGET_BRANCH"
-        gum spin --title "Updating branch..." -- bash -c "git checkout $TARGET_BRANCH && git pull origin master >> $LOG_FILE 2>&1"
+        gum spin --title "Updating branch..." -- bash -c "git checkout $TARGET_BRANCH && git pull origin master >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 else
     echo -e "\nBranch '$TARGET_BRANCH' does not exist."
     if gum confirm --default=yes "Create branch $TARGET_BRANCH from master?"; then
         log "Action: Create new branch $TARGET_BRANCH"
-        gum spin --title "Creating branch..." -- bash -c "git checkout master && git pull origin master && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH >> $LOG_FILE 2>&1"
+        gum spin --title "Creating branch..." -- bash -c "git checkout master && git pull origin master && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 fi
 
 # 3. Pull and Log
 if gum confirm --default=yes "Pull Master into current branch?"; then
     log "Action: Pull master"
-    gum spin --title "Pulling from master..." -- bash -c "git pull origin master >> $LOG_FILE 2>&1"
+    gum spin --title "Pulling from master..." -- bash -c "git pull origin master >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
 fi
 
 # Show changes since last tag
@@ -206,7 +209,7 @@ fi
 
 if gum confirm --default=yes "Push changes to $TARGET_BRANCH?"; then
     log "Action: Push changes"
-    gum spin --title "Pushing changes..." -- bash -c "git push >> $LOG_FILE 2>&1"
+    gum spin --title "Pushing changes..." -- bash -c "git push origin $TARGET_BRANCH >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
 fi
 
 # 4. Tag Management
@@ -224,7 +227,7 @@ if [[ "$ENV_MODE" == "PREPROD" ]]; then
     
     if gum confirm --default=yes "Create and push tag $NEXT_TAG?"; then
         log "Action: Create tag $NEXT_TAG"
-        gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin $NEXT_TAG >> $LOG_FILE 2>&1"
+        gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin $NEXT_TAG >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 
 else
@@ -234,7 +237,7 @@ else
     
     if gum confirm --default=yes "Create and push tag $PROD_TAG?"; then
         log "Action: Create version tag $PROD_TAG"
-        gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin $PROD_TAG >> $LOG_FILE 2>&1"
+        gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin $PROD_TAG >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 fi
 
