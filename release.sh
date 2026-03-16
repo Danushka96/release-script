@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.0"
+VERSION="1.5.1"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -110,6 +110,15 @@ case "$1" in
     "")
         # Check dependencies only for interactive mode
         check_dependencies
+        # NEW: Dirty Repo Check
+        if [[ -n $(git status --porcelain) ]]; then
+            echo -e "\n\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes."
+            log "Warning: Dirty repository detected."
+            if ! gum confirm --default=yes "Uncommitted changes might cause checkout/pull failures. Proceed anyway?"; then
+                log "Release aborted by user due to dirty repository."
+                exit 1
+            fi
+        fi
         ;;
     *)
         echo "Unknown command: $1"
@@ -215,17 +224,17 @@ if [[ "$ENV_MODE" == "PREPROD" ]]; then
     
     if gum confirm --default=yes "Create and push tag $NEXT_TAG?"; then
         log "Action: Create tag $NEXT_TAG"
-        gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin tag $NEXT_TAG >> $LOG_FILE 2>&1"
+        gum spin --title "Tagging..." -- bash -c "git tag $NEXT_TAG && git push origin $NEXT_TAG >> $LOG_FILE 2>&1"
     fi
 
 else
     show_last_tags ""
     PROD_TAG=$(gum input --placeholder "Enter new version tag (e.g., 1.5.2)")
-    if [[ -z "$PROD_TAG" ]]; then echo "Aborted."; exit 1; fi
+    if [[ -z "$PROD_TAG" ]]; then log "Tagging aborted"; exit 1; fi
     
     if gum confirm --default=yes "Create and push tag $PROD_TAG?"; then
         log "Action: Create version tag $PROD_TAG"
-        gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin tag $PROD_TAG >> $LOG_FILE 2>&1"
+        gum spin --title "Tagging..." -- bash -c "git tag $PROD_TAG && git push origin $PROD_TAG >> $LOG_FILE 2>&1"
     fi
 fi
 
