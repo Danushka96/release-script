@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.6"
+VERSION="1.5.7"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -25,10 +25,15 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
 }
 
+# Resolve Running User
+GIT_USER_NAME=$(git config user.name || echo "Unknown User")
+GIT_USER_EMAIL=$(git config user.email || echo "unknown@email.com")
+
 # Initialize Log File
 echo "--- Release Started ---" > "$LOG_FILE"
 log "Script Source: $0"
 log "Working Directory: $(pwd)"
+log "User: $GIT_USER_NAME <$GIT_USER_EMAIL>"
 log "Version: $VERSION"
 
 # Function to check and install dependencies
@@ -177,6 +182,7 @@ echo "  \____|_____|_|  \_ \______|______|______|_____/  |______|_____|_|    |__
 echo -e "${RESET}"
 echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
 echo "                     --- Release Automation Script v$VERSION ---"
+echo -e "                       \033[1mRunning as: $GIT_USER_NAME <$GIT_USER_EMAIL>\033[0m"
 
 # 1. Environment Selection
 MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)") || exit 1
