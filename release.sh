@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.8"
+VERSION="1.5.9"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -26,12 +26,15 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
 }
 
-# Centering Function
+# Centering Function (ANSI Aware)
 center_text() {
     local text="$1"
     local width=$BANNER_WIDTH
-    local text_len=${#text}
+    # Use sed to strip ANSI escape codes before measuring length
+    local plain_text=$(echo -e "$text" | sed 's/\x1B\[[0-9;]*[mK]//g')
+    local text_len=${#plain_text}
     local padding=$(( (width - text_len) / 2 ))
+    if [ $padding -lt 0 ]; then padding=0; fi
     for ((i=0; i<padding; i++)); do printf " "; done
     echo -e "$text"
 }
@@ -78,6 +81,26 @@ usage() {
     echo "  help      Show this help message"
     echo ""
     echo "If no command is provided, starts the interactive release process."
+}
+
+# Function to show banner
+show_banner() {
+    local VIOLET="\033[38;2;150;50;255m"  # Neon Violet
+    local SAFFRON="\033[38;2;255;210;50m" # Electric Saffron
+    local RESET="\033[0m"
+
+    echo -e "${VIOLET}"
+    echo "   ______ _____ _____   _____ _      ______  _____   _      _____ ______ ______ "
+    echo "  / ____|_   _|  __ \ / ____| |    |  ____|/ ____| | |    |_   _|  ____|  ____|"
+    echo " | |      | | | |__) | |    | |    | |__  | (___   | |      | | | |__  | |__   "
+    echo " | |      | | |  _  /| |    | |    |  __|  \___ \  | |      | | |  __| |  __|  "
+    echo " | |____ _| |_| | \ \| |____| |____| |____ ____) | | |____ _| |_| |    | |____ "
+    echo "  \____|_____|_|  \_ \______|______|______|_____/  |______|_____|_|    |______|"
+    echo -e "${RESET}"
+    center_text "${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
+    center_text "--- Release Automation Script v$VERSION ---"
+    center_text "\033[1mRunning as: $GIT_USER_NAME <$GIT_USER_EMAIL>\033[0m"
+    echo ""
 }
 
 # Function to get last 2 tags
@@ -155,14 +178,16 @@ case "$1" in
         exit 0
         ;;
     "")
-        # Check dependencies only for interactive mode
+        # Start interactive process
         check_dependencies
+        show_banner
+        
         # NEW: Fetch all remote status first
         gum spin --title "Fetching from remote..." -- git fetch --all >> "$LOG_FILE" 2>&1
         
         # NEW: Dirty Repo Check
         if [[ -n $(git status --porcelain) ]]; then
-            echo -e "\n\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes."
+            echo -e "\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes."
             log "Warning: Dirty repository detected."
             if ! gum confirm --default=yes "Uncommitted changes might cause checkout/pull failures. Proceed anyway?"; then
                 log "Release aborted by user due to dirty repository."
@@ -176,24 +201,6 @@ case "$1" in
         exit 1
         ;;
 esac
-
-# Start Interactive Release
-# Circles Life Brand Colors (24-bit ANSI) - Optimized for Dark Terminals
-VIOLET="\033[38;2;150;50;255m"  # Neon Violet
-SAFFRON="\033[38;2;255;210;50m" # Electric Saffron
-RESET="\033[0m"
-
-echo -e "${VIOLET}"
-echo "   ______ _____ _____   _____ _      ______  _____   _      _____ ______ ______ "
-echo "  / ____|_   _|  __ \ / ____| |    |  ____|/ ____| | |    |_   _|  ____|  ____|"
-echo " | |      | | | |__) | |    | |    | |__  | (___   | |      | | | |__  | |__   "
-echo " | |      | | |  _  /| |    | |    |  __|  \___ \  | |      | | |  __| |  __|  "
-echo " | |____ _| |_| | \ \| |____| |____| |____ ____) | | |____ _| |_| |    | |____ "
-echo "  \____|_____|_|  \_ \______|______|______|_____/  |______|_____|_|    |______|"
-echo -e "${RESET}"
-center_text "${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
-center_text "--- Release Automation Script v$VERSION ---"
-center_text "\033[1mRunning as: $GIT_USER_NAME <$GIT_USER_EMAIL>\033[0m"
 
 # 1. Environment Selection
 MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)") || exit 1
