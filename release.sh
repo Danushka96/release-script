@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.7"
+VERSION="1.5.8"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
 UPDATE_URL="https://raw.githubusercontent.com/Danushka96/release-script/main/release.sh"
 LOG_FILE="./release.log"
+BANNER_WIDTH=80
 
 # Handle Interrupts
 trap_exit() {
@@ -23,6 +24,16 @@ trap trap_exit SIGINT SIGTERM
 log() {
     local message="$1"
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Centering Function
+center_text() {
+    local text="$1"
+    local width=$BANNER_WIDTH
+    local text_len=${#text}
+    local padding=$(( (width - text_len) / 2 ))
+    for ((i=0; i<padding; i++)); do printf " "; done
+    echo -e "$text"
 }
 
 # Resolve Running User
@@ -180,9 +191,9 @@ echo " | |      | | |  _  /| |    | |    |  __|  \___ \  | |      | | |  __| |  
 echo " | |____ _| |_| | \ \| |____| |____| |____ ____) | | |____ _| |_| |    | |____ "
 echo "  \____|_____|_|  \_ \______|______|______|_____/  |______|_____|_|    |______|"
 echo -e "${RESET}"
-echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
-echo "                     --- Release Automation Script v$VERSION ---"
-echo -e "                       \033[1mRunning as: $GIT_USER_NAME <$GIT_USER_EMAIL>\033[0m"
+center_text "${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
+center_text "--- Release Automation Script v$VERSION ---"
+center_text "\033[1mRunning as: $GIT_USER_NAME <$GIT_USER_EMAIL>\033[0m"
 
 # 1. Environment Selection
 MODE=$(gum choose --header "Select Environment" "Pre-Prod (RC Release)" "Prod (Version Release)") || exit 1
