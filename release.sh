@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.2"
+VERSION="1.5.3"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -53,6 +53,7 @@ usage() {
     echo "  install   Install the script globally as 'release'"
     echo "  version   Show the current version"
     echo "  update    Update the script to the latest version"
+    echo "  logs      View the release execution logs"
     echo "  help      Show this help message"
     echo ""
     echo "If no command is provided, starts the interactive release process."
@@ -103,6 +104,14 @@ case "$1" in
         fi
         exit 0
         ;;
+    logs)
+        if [[ -f "$LOG_FILE" ]]; then
+            cat "$LOG_FILE"
+        else
+            echo "No log file found at $LOG_FILE"
+        fi
+        exit 0
+        ;;
     help|--help|-h)
         usage
         exit 0
@@ -142,7 +151,7 @@ echo "  / ____|_   _|  __ \ / ____| |    |  ____|/ ____| | |    |_   _|  ____|  
 echo " | |      | | | |__) | |    | |    | |__  | (___   | |      | | | |__  | |__   "
 echo " | |      | | |  _  /| |    | |    |  __|  \___ \  | |      | | |  __| |  __|  "
 echo " | |____ _| |_| | \ \| |____| |____| |____ ____) | | |____ _| |_| |    | |____ "
-echo "  \____|_____|_|  \_ \\______|______|______|_____/  |______|_____|_|    |______|"
+echo "  \____|_____|_|  \_ \______|______|______|_____/  |______|_____|_|    |______|"
 echo -e "${RESET}"
 echo -e "                          ${SAFFRON}--- CIRCLES LIFE SRI LANKA ---${RESET}"
 echo "                     --- Release Automation Script v$VERSION ---"
