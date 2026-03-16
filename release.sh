@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.4"
+VERSION="1.5.5"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -158,9 +158,9 @@ case "$1" in
 esac
 
 # Start Interactive Release
-# Circles Life Brand Colors (24-bit ANSI)
-VIOLET="\033[38;2;100;0;255m"
-SAFFRON="\033[38;2;241;195;65m"
+# Circles Life Brand Colors (24-bit ANSI) - Optimized for Dark Terminals
+VIOLET="\033[38;2;150;50;255m"  # Neon Violet
+SAFFRON="\033[38;2;255;210;50m" # Electric Saffron
 RESET="\033[0m"
 
 echo -e "${VIOLET}"
