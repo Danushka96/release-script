@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.6.0"
+VERSION="1.6.1"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -38,6 +38,25 @@ center_text() {
     # Print leading padding
     printf "%${padding}s" ""
     echo -e "$text"
+}
+
+# Spinner and Logging Helper
+run_with_spinner() {
+    local title="$1"
+    local cmd="$2"
+    log "Spin: $title"
+    local tmp_log=$(mktemp /tmp/release_XXXXXX.log)
+    gum spin --title "$title" -- bash -c "$cmd" > "$tmp_log" 2>&1
+    local status=$?
+    if [ -f "$tmp_log" ]; then
+        cat "$tmp_log" >> "$LOG_FILE"
+        rm -f "$tmp_log"
+    fi
+    if [ $status -ne 0 ]; then
+        log "ERROR: $title failed with status $status"
+        return $status
+    fi
+    return 0
 }
 
 # Resolve Running User
@@ -184,7 +203,7 @@ case "$1" in
         show_banner
         
         # NEW: Fetch all remote status first
-        gum spin --title "Fetching from remote..." -- bash -c "git fetch --all >> '$LOG_FILE' 2>&1"
+        run_with_spinner "Fetching from remote..." "git fetch --all"
         
         # NEW: Dirty Repo Check
         if [[ -n $(git status --porcelain) ]]; then
@@ -232,20 +251,20 @@ if git branch -a | grep -q "remotes/origin/$TARGET_BRANCH"; then
     echo -e "\nBranch 'origin/$TARGET_BRANCH' exists."
     if gum confirm --default=yes "Checkout and pull $PRIMARY_BRANCH into $TARGET_BRANCH?"; then
         log "Action: Update existing branch $TARGET_BRANCH from $PRIMARY_BRANCH"
-        gum spin --title "Updating branch..." -- bash -c "(git checkout $TARGET_BRANCH && git pull origin $PRIMARY_BRANCH) >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+        run_with_spinner "Updating branch..." "git checkout $TARGET_BRANCH && git pull origin $PRIMARY_BRANCH" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 else
     echo -e "\nBranch '$TARGET_BRANCH' does not exist."
     if gum confirm --default=yes "Create branch $TARGET_BRANCH from $PRIMARY_BRANCH?"; then
         log "Action: Create new branch $TARGET_BRANCH from $PRIMARY_BRANCH"
-        gum spin --title "Creating branch..." -- bash -c "(git checkout $PRIMARY_BRANCH && git pull origin $PRIMARY_BRANCH && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH) >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+        run_with_spinner "Creating branch..." "git checkout $PRIMARY_BRANCH && git pull origin $PRIMARY_BRANCH && git checkout -b $TARGET_BRANCH && git push -u origin $TARGET_BRANCH" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 fi
 
 # 3. Pull and Log
 if gum confirm --default=yes "Pull $PRIMARY_BRANCH into current branch?"; then
     log "Action: Pull $PRIMARY_BRANCH"
-    gum spin --title "Pulling from $PRIMARY_BRANCH..." -- bash -c "git pull origin $PRIMARY_BRANCH >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+    run_with_spinner "Pulling from $PRIMARY_BRANCH..." "git pull origin $PRIMARY_BRANCH" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
 fi
 
 # Show changes since last tag
@@ -265,7 +284,7 @@ fi
 
 if gum confirm --default=yes "Push changes to $TARGET_BRANCH?"; then
     log "Action: Push changes to $TARGET_BRANCH"
-    gum spin --title "Pushing changes..." -- bash -c "git push origin $TARGET_BRANCH >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+    run_with_spinner "Pushing changes..." "git push origin $TARGET_BRANCH" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
 fi
 
 # 4. Tag Management
@@ -283,7 +302,7 @@ if [[ "$ENV_MODE" == "PREPROD" ]]; then
     
     if gum confirm --default=yes "Create and push tag $NEXT_TAG?"; then
         log "Action: Create tag $NEXT_TAG"
-        gum spin --title "Tagging..." -- bash -c "(git tag $NEXT_TAG && git push origin $NEXT_TAG) >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+        run_with_spinner "Tagging..." "git tag $NEXT_TAG && git push origin $NEXT_TAG" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 
 else
@@ -293,7 +312,7 @@ else
     
     if gum confirm --default=yes "Create and push tag $PROD_TAG?"; then
         log "Action: Create version tag $PROD_TAG"
-        gum spin --title "Tagging..." -- bash -c "(git tag $PROD_TAG && git push origin $PROD_TAG) >> $LOG_FILE 2>&1" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
+        run_with_spinner "Tagging..." "git tag $PROD_TAG && git push origin $PROD_TAG" || { echo "Git operation failed. Check $LOG_FILE"; exit 1; }
     fi
 fi
 
