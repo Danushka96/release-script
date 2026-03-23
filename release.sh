@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.6.1"
+VERSION="1.6.2"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -207,12 +207,34 @@ case "$1" in
         
         # NEW: Dirty Repo Check
         if [[ -n $(git status --porcelain) ]]; then
-            echo -e "\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes."
-            log "Warning: Dirty repository detected."
-            if ! gum confirm --default=yes "Uncommitted changes might cause checkout/pull failures. Proceed anyway?"; then
-                log "Release aborted by user due to dirty repository."
-                exit 1
-            fi
+            echo -e "\n\033[1;33mWARNING:\033[0m You have uncommitted or untracked changes:"
+            git status --short
+            echo ""
+            
+            DIRTY_ACTION=$(gum choose "Stash changes (Recommended)" "Discard all changes (Reset)" "Proceed anyway (Risky)" "Abort Release") || exit 1
+            
+            case "$DIRTY_ACTION" in
+                "Stash"*)
+                    log "Action: Stashing changes"
+                    run_with_spinner "Stashing changes..." "git stash push -m 'Release Script Auto-Stash $(date)'"
+                    ;;
+                "Discard"*)
+                    if gum confirm "Are you sure? This will PERMANENTLY delete all local changes."; then
+                        log "Action: Discarding all changes"
+                        run_with_spinner "Discarding changes..." "git checkout -- . && git clean -fd"
+                    else
+                        echo "Action cancelled. Please handle changes manually."
+                        exit 1
+                    fi
+                    ;;
+                "Proceed"*)
+                    log "Warning: Proceeding with dirty repository."
+                    ;;
+                "Abort"*)
+                    log "Release aborted by user due to dirty repository."
+                    exit 1
+                    ;;
+            esac
         fi
         ;;
     *)
