@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.5.9"
+VERSION="1.6.0"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -30,12 +30,13 @@ log() {
 center_text() {
     local text="$1"
     local width=$BANNER_WIDTH
-    # Use sed to strip ANSI escape codes before measuring length
-    local plain_text=$(echo -e "$text" | sed 's/\x1B\[[0-9;]*[mK]//g')
+    # Use perl to strip ANSI escape codes reliably across platforms
+    local plain_text=$(echo -e "$text" | perl -pe 's/\x1b\[[0-9;]*[mK]//g')
     local text_len=${#plain_text}
     local padding=$(( (width - text_len) / 2 ))
     if [ $padding -lt 0 ]; then padding=0; fi
-    for ((i=0; i<padding; i++)); do printf " "; done
+    # Print leading padding
+    printf "%${padding}s" ""
     echo -e "$text"
 }
 
@@ -85,8 +86,8 @@ usage() {
 
 # Function to show banner
 show_banner() {
-    local VIOLET="\033[38;2;150;50;255m"  # Neon Violet
-    local SAFFRON="\033[38;2;255;210;50m" # Electric Saffron
+    local VIOLET="\033[38;2;160;70;255m"  # Brighter Neon Violet
+    local SAFFRON="\033[38;2;255;220;60m" # Brighter Electric Saffron
     local RESET="\033[0m"
 
     echo -e "${VIOLET}"
@@ -183,7 +184,7 @@ case "$1" in
         show_banner
         
         # NEW: Fetch all remote status first
-        gum spin --title "Fetching from remote..." -- git fetch --all >> "$LOG_FILE" 2>&1
+        gum spin --title "Fetching from remote..." -- bash -c "git fetch --all >> '$LOG_FILE' 2>&1"
         
         # NEW: Dirty Repo Check
         if [[ -n $(git status --porcelain) ]]; then
