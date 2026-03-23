@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-VERSION="1.6.2"
+VERSION="1.7.0"
 YEAR=$(date +%Y)
 WEEK=$(date +%V) # ISO week number
 DEFAULT_BRANCH="release/Y${YEAR}W${WEEK}"
@@ -96,6 +96,7 @@ usage() {
     echo "Commands:"
     echo "  install   Install the script globally as 'release'"
     echo "  version   Show the current version"
+    echo "  branch    Interactive feature branch creator"
     echo "  update    Update the script to the latest version"
     echo "  logs      View the release execution logs"
     echo "  help      Show this help message"
@@ -190,6 +191,35 @@ case "$1" in
             cat "$LOG_FILE"
         else
             echo "No log file found at $LOG_FILE"
+        fi
+        exit 0
+        ;;
+    branch)
+        show_banner
+        echo -e "\033[1;34m--- Feature Branch Creation ---\033[0m"
+        
+        TICKET_NUM=$(gum input --placeholder "Jira Ticket Number (e.g., 21585)") || exit 0
+        if [[ -z "$TICKET_NUM" ]]; then echo "Ticket number required."; exit 1; fi
+        
+        # Strip SG- prefix if user entered it (case-insensitive)
+        TICKET_NUM=$(echo "$TICKET_NUM" | sed 's/^[Ss][Gg]-//')
+        
+        DESC=$(gum input --placeholder "Brief Description (e.g., get_order_details)") || exit 0
+        if [[ -z "$DESC" ]]; then echo "Description required."; exit 1; fi
+        
+        # Sanitize description: lowercase, spaces to underscores, remove special chars
+        DESC=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g')
+        
+        NEW_BRANCH="feature/SG-$TICKET_NUM-$DESC"
+        
+        echo -e "\nProposed Branch: \033[1;32m$NEW_BRANCH\033[0m"
+        echo -e "Base Branch:     \033[1;34m$PRIMARY_BRANCH\033[0m"
+        
+        if gum confirm "Create and checkout this branch?"; then
+            run_with_spinner "Updating $PRIMARY_BRANCH..." "git checkout $PRIMARY_BRANCH && git pull origin $PRIMARY_BRANCH"
+            run_with_spinner "Creating $NEW_BRANCH..." "git checkout -b $NEW_BRANCH && git push -u origin $NEW_BRANCH"
+            echo -e "\n\033[1;32mSuccess!\033[0m Branch created and pushed to origin."
+            log "Action: Created feature branch $NEW_BRANCH"
         fi
         exit 0
         ;;
